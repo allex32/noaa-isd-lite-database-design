@@ -73,7 +73,7 @@ RETURNS TABLE AS
 RETURN 
 
 
-Select * from (
+Select finalJoin.* from (
 
 Select inpStation.id_station, inpStation.dayWithTime, inpStation.AvgTemp,
 inpCountry.id_station inpCountryStation, inpCountry.dayWithTime inpCountryDayWithTime, 
@@ -100,12 +100,17 @@ Select rc.id_station, DATEADD(dd, 0, DATEDIFF(dd, 0, rc.time)) as dayWithTime,  
 	 ) tmp ) inpCountry 
 	 
 	on inpStation.dayWithTime = inpCountry.dayWithTime 
+	--and inpStation.id_station <> inpCountry.id_station
 ) finalJoin
-
-where id_station <> inpCountryStation 
-and abs(AvgTemp - inpCountryAvgtemp) < abs(AvgTemp * 0.15)
+left join 
+	(Select * from Weather_station where Weather_station.usaf_wban = @UsafWban) inpStationTable
+	on inpStationTable.id_weather_station = finalJoin.inpCountryStation
+where inpStationTable.id_weather_station is null and
+abs(AvgTemp - inpCountryAvgtemp) < abs(AvgTemp * 0.15)
  
 GO
 
+--67915
+EXEC sp_recompile N'ClosestStationByTempAndWind'
 Select * from ClosestStationByTempAndWind('000123-99999','BR')
 
